@@ -1,0 +1,33 @@
+# ── Node / Next.js ────────────────────────────────────────────────────────────
+node_modules/
+.next/
+out/
+zesty/frontend/node_modules/
+zesty/frontend/.next/
+zesty/frontend/out/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+zesty/backend/venv/
+zesty/backend/.venv/
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+*.env
+.env.local
+.env.*.local
+zesty/frontend/.env.local
+zesty/backend/.env
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+*.log
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
