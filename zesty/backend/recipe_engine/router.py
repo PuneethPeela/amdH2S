@@ -61,18 +61,67 @@ RECIPE_POOL: list[RecipeItem] = [
     ),
 ]
 
+import os
+import json
+import google.generativeai as genai
+from fastapi import APIRouter, HTTPException
+
 @router.post("/", response_model=RecipeResponse)
 async def get_recipes(request: RecipeRequest) -> RecipeResponse:
-    prefs = request.preferences.lower()
-    # Filter by tags if keywords matched
-    if any(k in prefs for k in ["protein", "muscle", "gym"]):
-        pool = [r for r in RECIPE_POOL if "high-protein" in (r.tags or [])]
-    elif any(k in prefs for k in ["vegan", "plant"]):
-        pool = [r for r in RECIPE_POOL if "vegan" in (r.tags or [])]
-    elif any(k in prefs for k in ["quick", "fast"]):
-        pool = [r for r in RECIPE_POOL if r.prep_time <= 10]
-    else:
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key:
+        raise HTTPException(status_code=500, detail="Missing GEMINI_API_KEY environment variable. Recipe Engine requires Gemini.")
+        
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    
+    prompt = f"""
+    The user requested recipes with the following preferences: "{request.preferences}"
+    Provide exactly 3 healthy recipe suggestions.
+    Return ONLY a valid JSON object matching this schema exactly (no markdown formatting, no code blocks):
+    {{
+      "recipes": [
+        {{
+          "name": "<string>",
+          "calories": <int>,
+          "prep_time": <int>,
+          "ingredients": ["<string>", ...],
+          "steps": ["<string>", ...],
+          "nutritional_note": "<short sentence about why it's healthy>",
+          "tags": ["<string>", "<string>"]
+        }}
+      ]
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:-3].strip()
+        elif text.startswith("```"):
+            text = text[3:-3].strip()
+            
+        data = json.loads(text)
+        recipes = data.get("recipes", [])
+        
+        parsed_recipes = []
+        for r in recipes[:3]:
+            parsed_recipes.append(RecipeItem(
+                name=r.get("name", "Generated Recipe"),
+                calories=r.get("calories", 300),
+                prep_time=r.get("prep_time", 15),
+                ingredients=r.get("ingredients", []),
+                steps=r.get("steps", []),
+                nutritional_note=r.get("nutritional_note", "A healthy AI-generated recipe."),
+                tags=r.get("tags", ["healthy"])
+            ))
+            
+        return RecipeResponse(recipes=parsed_recipes)
+    except Exception as e:
+        print(f"Gemini recipe error: {e}")
+        # Fallback to local pool if AI fails
         pool = RECIPE_POOL
-
-    # Return up to 3 recipes
-    return RecipeResponse(recipes=pool[:3] if pool else RECIPE_POOL[:3])
+        if "protein" in request.preferences.lower():
+            pool = [r for r in RECIPE_POOL if "protein" in (r.tags or [])]
+        return RecipeResponse(recipes=pool[:3] if pool else RECIPE_POOL[:3])

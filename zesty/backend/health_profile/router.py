@@ -74,39 +74,42 @@ def _compute_score(logs: list[dict], goal_cal: int) -> tuple[int, str, HealthSco
         goal_alignment=goal_alignment,
     )
 
-def _generate_insights(logs: list[dict], score: int) -> list[str]:
-    insights = []
-    total_cal = sum(e["calories"] for e in logs)
-    total_pro = sum(e["protein"] for e in logs)
+import os
+import json
+import google.generativeai as genai
+from fastapi import HTTPException
 
-    if total_pro < 40:
-        insights.append(
-            "Protein intake is below 50% of your goal. Try adding a Greek yoghurt or egg omelette."
-        )
-    if total_cal > 1800:
-        insights.append(
-            "You're already at 85%+ of your calorie goal. Consider a light, fibre-rich dinner."
-        )
-    if len(logs) == 0:
-        insights.append(
-            "No meals logged yet today. A balanced breakfast can set the tone — try oatmeal with banana."
-        )
-    if len(logs) >= 1 and total_cal < 600:
-        insights.append(
-            "Calorie intake is very low today. Skipping meals can spike stress hormones. "
-            "Source: Vertex AI · habit pattern model"
-        )
-    if score >= 80:
-        insights.append(
-            "Great work today! You're on track with your protein and calorie balance. "
-            "Keep it up to maintain your 7-day streak."
-        )
-    if not insights:
-        insights.append(
-            "I've noticed you tend to skip snacks on weekday afternoons. A 150 kcal snack at 4pm "
-            "may help prevent overeating at dinner. Source: BigQuery ML · habit model"
-        )
-    return insights[:3]
+def _generate_insights(logs: list[dict], score: int) -> list[str]:
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key:
+        print("Missing GEMINI_API_KEY, using fallback insights")
+        return ["Your nutrition insights require a Gemini API key.", "Add it to your backend .env file."]
+        
+    try:
+        genai.configure(api_key=gemini_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        
+        prompt = f"""
+        Analyze this user's food logs for today: {str(logs)[:500]}. 
+        Their overall health score is {score}/100.
+        Provide 3 brief, actionable, and personalized nutrition insights.
+        Return ONLY a JSON object matching this schema exactly (no markdown formatting, no code blocks):
+        {{
+            "insights": ["<insight 1>", "<insight 2>", "<insight 3>"]
+        }}
+        """
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:-3].strip()
+        elif text.startswith("```"):
+            text = text[3:-3].strip()
+            
+        data = json.loads(text)
+        return data.get("insights", ["Eat more greens.", "Stay hydrated.", "Aim for 80g of protein."])[:3]
+    except Exception as e:
+        print(f"Gemini insight error: {e}")
+        return ["Add a source of lean protein.", "Drink more water today.", "Consider a fiber-rich snack."]
 
 @router.get("/", response_model=HealthScoreResponse)
 async def get_health_profile() -> HealthScoreResponse:

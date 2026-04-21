@@ -5,6 +5,9 @@ from health_profile.router import router as health_profile_router
 from recipe_engine.router import router as recipe_engine_router
 from location.router import router as location_router
 
+from dotenv import load_dotenv
+load_dotenv()
+
 app = FastAPI(title="Zesty AI API", version="1.0.0")
 
 # CORS setup

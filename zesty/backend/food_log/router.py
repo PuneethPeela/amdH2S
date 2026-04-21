@@ -58,20 +58,54 @@ def _fuzzy_match(query: str) -> tuple[str, dict] | None:
             return key, nutrients
     return None
 
+import google.generativeai as genai
+import json
+
 @router.post("/", response_model=FoodLogResponse)
 async def log_food(request: FoodLogRequest) -> FoodLogResponse:
-    match = _fuzzy_match(request.query)
-
-    if match:
-        key, n = match
-        item_name = key.title()
-        calories, protein, carbs, fat, fibre = (
-            n["calories"], n["protein"], n["carbs"], n["fat"], n["fibre"]
-        )
-    else:
+    gemini_key = os.getenv("GEMINI_API_KEY")
+    if not gemini_key:
+        raise HTTPException(status_code=500, detail="Missing GEMINI_API_KEY environment variable. Log Food is powered by Gemini.")
+        
+    genai.configure(api_key=gemini_key)
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    
+    prompt = f"""
+    Analyze the following food query: "{request.query}"
+    Provide reasonable nutritional estimates.
+    Return ONLY a valid JSON object matching this schema exactly (no markdown formatting, no code blocks):
+    {{
+        "calories": <int>,
+        "protein": <float>,
+        "carbs": <float>,
+        "fat": <float>,
+        "fibre": <float>,
+        "item_name": "<string formatted nicely, e.g. 'Dal Rice (Medium)'>"
+    }}
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        text = response.text.strip()
+        if text.startswith("```json"):
+            text = text[7:-3].strip()
+        elif text.startswith("```"):
+            text = text[3:-3].strip()
+            
+        data = json.loads(text)
+        
+        calories = int(data.get("calories", 0))
+        protein = float(data.get("protein", 0))
+        carbs = float(data.get("carbs", 0))
+        fat = float(data.get("fat", 0))
+        fibre = float(data.get("fibre", 0))
+        item_name = str(data.get("item_name", request.query.title()))
+        
+    except Exception as e:
+        print(f"Gemini error: {e}, fallback to estimates.")
         # Intelligent fallback — estimate based on keyword density
         words = request.query.lower().split()
-        multiplier = 2 if any(w in words for w in ["large", "big", "double"]) else 0.7 if any(w in words for w in ["small", "half"]) else 1.0
+        multiplier = 2 if any(w in words for w in ["large", "big", "double"]) else 0.7 if any(w in words for w in ["small", "half", "little"]) else 1.0
         calories = int(350 * multiplier)
         protein, carbs, fat, fibre = int(15 * multiplier), int(40 * multiplier), int(12 * multiplier), int(4 * multiplier)
         item_name = request.query.strip().title()[:40]
