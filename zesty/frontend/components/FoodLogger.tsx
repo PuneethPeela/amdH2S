@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import type { FoodLogResponse } from '@/types';
 import { FoodLogRequestSchema } from '@/types';
@@ -54,7 +55,13 @@ export function FoodLogger({ onLog, isLogging, lastLog }: FoodLoggerProps): Reac
     };
 
     return (
-        <section aria-labelledby="food-logger-heading" className="glass p-6 space-y-5">
+        <motion.section
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            aria-labelledby="food-logger-heading"
+            className="glass p-6 space-y-5"
+        >
             <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400" aria-hidden="true">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -118,50 +125,61 @@ export function FoodLogger({ onLog, isLogging, lastLog }: FoodLoggerProps): Reac
 
             {/* Quick suggestions */}
             <div role="group" aria-label="Quick food suggestions" className="flex flex-wrap gap-2">
-                {SUGGESTIONS.map((s) => (
-                    <button
+                {SUGGESTIONS.map((s, idx) => (
+                    <motion.button
                         key={s}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3, delay: idx * 0.05 }}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                         type="button"
                         onClick={() => handleSuggestion(s)}
-                        className="tag bg-white/5 text-slate-300 border border-white/10 hover:bg-orange-500/20 hover:border-orange-500/40 hover:text-orange-300 transition-all duration-200 cursor-pointer py-1.5 px-3 min-h-[36px]"
+                        className="tag bg-white/5 text-slate-300 border border-white/10 hover:bg-orange-500/20 hover:border-orange-500/40 hover:text-orange-300 transition-colors duration-200 cursor-pointer py-1.5 px-3 min-h-[36px]"
                     >
                         {s}
-                    </button>
+                    </motion.button>
                 ))}
             </div>
 
             {/* Log result with aria-live for screen reader announcement */}
-            {lastLog && (
-                <div
-                    aria-live="polite"
-                    aria-atomic="true"
-                    role="status"
-                    className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-4 space-y-3 animate-fade-in-up"
-                >
-                    <p className="text-sm font-semibold text-emerald-300">{lastLog.message}</p>
-                    <div className="flex flex-wrap gap-2" role="list" aria-label="Nutritional breakdown">
-                        {([
-                            { label: 'Calories', value: lastLog.calories, unit: 'kcal', color: 'text-orange-400' },
-                            { label: 'Protein', value: lastLog.protein, unit: 'g', color: 'text-blue-400' },
-                            { label: 'Carbs', value: lastLog.carbs, unit: 'g', color: 'text-yellow-400' },
-                            { label: 'Fat', value: lastLog.fat, unit: 'g', color: 'text-red-400' },
-                            { label: 'Fibre', value: lastLog.fibre, unit: 'g', color: 'text-emerald-400' },
-                        ] as const).map(({ label, value, unit, color }) => (
-                            <div
-                                key={label}
-                                role="listitem"
-                                className="glass-light px-3 py-1.5 flex flex-col items-center min-w-[60px]"
-                            >
-                                <span className={`text-base font-bold tabular-nums ${color}`}>
-                                    {Math.round(value)}
-                                    <span className="text-[10px] font-normal ml-0.5">{unit}</span>
-                                </span>
-                                <span className="text-[10px] text-slate-500 mt-0.5">{label}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-        </section>
+            <AnimatePresence>
+                {lastLog && (
+                    <motion.div
+                        initial={{ opacity: 0, height: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, height: 'auto', scale: 1 }}
+                        exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        aria-live="polite"
+                        aria-atomic="true"
+                        role="status"
+                        className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-4 space-y-3 overflow-hidden"
+                    >
+                        <p className="text-sm font-semibold text-emerald-300">{lastLog.message}</p>
+                        <div className="flex flex-wrap gap-2" role="list" aria-label="Nutritional breakdown">
+                            {([
+                                { label: 'Calories', value: lastLog.calories, unit: 'kcal', color: 'text-orange-400' },
+                                { label: 'Protein', value: lastLog.protein, unit: 'g', color: 'text-blue-400' },
+                                { label: 'Carbs', value: lastLog.carbs, unit: 'g', color: 'text-yellow-400' },
+                                { label: 'Fat', value: lastLog.fat, unit: 'g', color: 'text-red-400' },
+                                { label: 'Fibre', value: lastLog.fibre, unit: 'g', color: 'text-emerald-400' },
+                            ] as const).map(({ label, value, unit, color }) => (
+                                <div
+                                    key={label}
+                                    role="listitem"
+                                    className="glass-light px-3 py-1.5 flex flex-col items-center min-w-[60px]"
+                                >
+                                    <span className={`text-base font-bold tabular-nums ${color}`}>
+                                        {Math.round(value)}
+                                        <span className="text-[10px] font-normal ml-0.5">{unit}</span>
+                                    </span>
+                                    <span className="text-[10px] text-slate-500 mt-0.5">{label}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.section>
     );
 }

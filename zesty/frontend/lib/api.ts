@@ -47,3 +47,7 @@ export async function getRecipes(preferences: string): Promise<RecipeResponse> {
 export async function getDailySummary(): Promise<DailySummary> {
     return apiFetch<DailySummary>('/food_log/summary', undefined, DailySummarySchema);
 }
+
+export async function getNearbyLocations(lat: number, lng: number): Promise<any> {
+    return apiFetch<any>(`/location/nearby?lat=${lat}&lng=${lng}`, { method: 'GET' });
+}

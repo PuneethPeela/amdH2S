@@ -6,6 +6,7 @@ import { HealthScoreRing } from '@/components/HealthScoreRing';
 import { MacroBar } from '@/components/MacroBar';
 import { FoodLogger } from '@/components/FoodLogger';
 import { RecipeCard, RecipeCardSkeleton } from '@/components/RecipeCard';
+import { LocationFinder } from '@/components/LocationFinder';
 import { useFoodLog, useHealthScore, useRecipes, useDailySummary } from '@/hooks/useZesty';
 
 const GOOGLE_SERVICES = [
@@ -242,21 +243,8 @@ export default function Home(): React.JSX.Element {
             </div>
           </section>
 
-          {/* Nearby grocery nudge */}
-          <div className="glass-light p-4 flex gap-3 items-start">
-            <span className="text-2xl" aria-hidden="true">📍</span>
-            <div>
-              <p className="text-sm font-semibold text-white">Grocery nearby · 0.8km</p>
-              <p className="text-xs text-slate-400 mt-0.5">BigBasket detected. Your smart shopping list is ready.</p>
-              <button
-                type="button"
-                className="mt-2 text-xs text-orange-400 font-medium hover:text-orange-300 transition-colors focus-visible:underline min-h-[44px] flex items-center"
-                aria-label="View smart shopping list for BigBasket"
-              >
-                View shopping list →
-              </button>
-            </div>
-          </div>
+          {/* Real-time Location Finder */}
+          <LocationFinder />
         </div>
       </div>
 

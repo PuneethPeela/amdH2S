@@ -122,18 +122,24 @@
       #0F1117;
   }
 
-  /* Scrollbar */
-  .scrollbar-thin::-webkit-scrollbar {
-    width: 4px;
+  /* Global Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-track {
+  ::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb {
+  ::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.15);
     border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(249, 115, 22, 0.5);
+    /* Orange hover hint */
   }
 }
 
