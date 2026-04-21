@@ -6,7 +6,8 @@ import {
     DailySummarySchema,
 } from '@/types';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000/api';
+// Ensure browser calls are strictly relative to the host domain so Next.js middleware handles routing
+const BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
 
 async function apiFetch<T>(
     path: string,
