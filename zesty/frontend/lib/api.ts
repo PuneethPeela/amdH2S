@@ -13,10 +13,12 @@ async function apiFetch<T>(
     options?: RequestInit,
     schema?: { parse: (data: unknown) => T }
 ): Promise<T> {
-    const res = await fetch(`${BASE}${path}`, {
+    const defaultOptions: RequestInit = {
         headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
         ...options,
-    });
+    };
+    const res = await fetch(`${BASE}${path}`, defaultOptions);
     if (!res.ok) {
         throw new Error(`API error ${res.status}: ${res.statusText}`);
     }
