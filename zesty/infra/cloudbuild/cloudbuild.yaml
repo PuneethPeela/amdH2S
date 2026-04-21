@@ -1,0 +1,27 @@
+steps:
+  # Build Backend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/${_PROJECT_ID}/zesty-backend', './backend']
+  
+  # Build Frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/${_PROJECT_ID}/zesty-frontend', './frontend']
+  
+  # Push Images
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/${_PROJECT_ID}/zesty-backend']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/${_PROJECT_ID}/zesty-frontend']
+
+  # Deploy Backend to Antigravity / Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'zesty-backend', '--image', 'gcr.io/${_PROJECT_ID}/zesty-backend', '--region', '${_REGION}', '--platform', 'managed', '--allow-unauthenticated']
+
+  # Deploy Frontend to Antigravity / Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'zesty-frontend', '--image', 'gcr.io/${_PROJECT_ID}/zesty-frontend', '--region', '${_REGION}', '--platform', 'managed', '--allow-unauthenticated']
+
+substitutions:
+  _REGION: 'asia-south1'
